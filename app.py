@@ -46,10 +46,35 @@ class userInfoTable(userdb.Model):
     def __repr__(self):
         return 'table name is ' + self.username
 
+# 建立model类，用于创建table/model
+class trainerInfoTable(userdb.Model):
+    __tablename__ = 'trainerInfo'
+
+    trainer_name = userdb.Column(userdb.String, primary_key=True)
+    trainer_intro = userdb.Column(userdb.String, primary_key=True)
+    def __repr__(self):
+        return 'table name is ' + self.username
+
 
 @app.route('/')
 def test():
     return '服务器正常运行'
+
+
+# show photo
+@app.route('/userPicture', methods=['GET'])
+def show_photo():
+    if request.method == 'GET':
+        filename = request.args.get('filename')
+        if filename is None:
+            pass
+        else:
+            image_data = open(os.path.join('./userPicture/','%s' % filename), "rb").read()
+            response = make_response(image_data)
+            response.headers['Content-Type'] = 'image/jpeg'
+            return response
+    else:
+        pass
 
 
 # 用户登录 返回码为0无注册 返回码为1密码错误
@@ -62,20 +87,28 @@ def check_user():
         if passwordRight.__len__() is not 0:
             obj = userInfoTable.query.filter_by(username=request.form['username']).first()
             rootdir = obj.pictureUrl
+            phonenum = obj.user_phone_number
             list = os.listdir(rootdir)  # 列出文件夹下所有的目录与文件
+            info_dict = {"info":[]}
             for i in range(0, len(list)):
+                picture_file_name = list[i]
                 # 图片文件
-                path = os.path.join(rootdir, list[i])
+                path = os.path.join(rootdir, picture_file_name)
                 if os.path.isfile(path):
-                    with open(path, 'rb') as f:
-                        image_byte = base64.b64encode(f.read())
-                        print(type(image_byte))
-                    image_str = image_byte.decode('ascii')  # byte类型转换为str
+                    # with open(path, 'rb') as f:
+                    #     image_byte = base64.b64encode(f.read())
+                    #     trainer_image_string = image_byte.decode('ascii')  # byte类型转换为str
+                    trainer_name = picture_file_name.split(".")[0]
+                    obj = trainerInfoTable.query.filter_by(trainer_name=trainer_name).first()
+                    trainer_intro = obj.trainer_intro
+                    print("trainer_name:",trainer_name)
+                    trainer_image_url = "http://10.0.2.2:8080/userPicture?filename="+phonenum+"/"+picture_file_name
+                    data = {"trainer_image_url": trainer_image_url,"trainer_name":trainer_name,"trainer_intro":trainer_intro}
+                    info_dict.get("info").append(data)
 
-                    # data = {"image": image_str}
-                    # jsoninfo = json.dumps(data)
-                    # print(jsoninfo)
-                    return image_str
+            jsoninfo = json.dumps(info_dict)
+            print("jsoninfo:",jsoninfo)
+            return jsoninfo
 
             return '登录成功'
         else:
@@ -104,4 +137,4 @@ def register():
 
 if __name__ == '__main__':
     userdb.create_all()  # 用来创建table，一般在初始化的时候调用
-    app.run(host="192.168.223.1", port=8080, threaded=True)
+    app.run(host="127.0.0.1", port=8080, threaded=True)
