@@ -109,8 +109,6 @@ def check_user():
             jsoninfo = json.dumps(info_dict)
             print("jsoninfo:",jsoninfo)
             return jsoninfo
-
-            return '登录成功'
         else:
             return '1'
     else:
